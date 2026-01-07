@@ -32,12 +32,12 @@ app = Flask(__name__)
 CORS(app)
 
 # === CONFIG FROM ENV ===
-EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "enter your gmail id")
-EMAIL_APP_PASSWORD = os.getenv("EMAIL_APP_PASSWORD", "enter 16 digit email app password")
-OWNER = os.getenv("OWNER", "@ITsGOLU_OFFICIAL")
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "enter your bot token")
-SECRET_KEY = os.getenv("SECRET_KEY", "enter key for endpoint")
-YOUR_TELEGRAM_CHAT_ID = os.getenv("YOUR_TELEGRAM_CHAT_ID", "enter your tg id")
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "")
+EMAIL_APP_PASSWORD = os.getenv("EMAIL_APP_PASSWORD", "")
+OWNER = os.getenv("OWNER", "@ITSMARCOOFFICIAL")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+YOUR_TELEGRAM_CHAT_ID = os.getenv("YOUR_TELEGRAM_CHAT_ID", "")
 
 # === GLOBALS ===
 token_cache = {"tokens": [], "user_usage": {}}
@@ -53,7 +53,7 @@ CURRENT_FINGERPRINT_ID = uuid.uuid4().hex  # Fixed fingerprint ID
 API_URL = "https://api.classplusapp.com"
 REGION = "IN"
 API_VERSION = "52"
-NAMES = ["Aarav", "Vivaan", "Aditya", "Vihaan", "Arjun", "Sai", "Reyansh", "Ayaan", "Krishna", "Ishaan", "Atharv"]
+NAMES = ["Komal", "Shrikant", "Vivek", "Aayush", "Ansh", "Kiranvedi", "Simrankumari", "Satyakesh", "Rakesh", "Ishika", "Kishan"]
 ORG_CODES = ["zevobw"]
 USER_AGENTS = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "Mozilla/5.0 (X11; Linux x86_64)"]
 
@@ -425,7 +425,7 @@ def is_user_member_of_channel(user_id):
     if not TELEGRAM_BOT_TOKEN:
         return False
     try:
-        params = {"chat_id": "@ITsGOLU_OFFICIAL", "user_id": user_id}
+        params = {"chat_id": "@ITSMARCOOFFICIAL", "user_id": user_id}
         response = requests.get(
             f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getChatMember",
             params=params,
@@ -450,11 +450,11 @@ def home():
     return jsonify({
         "message": "Welcome",
         "owner": OWNER,
-        "channel": "@ITsGOLU_OFFICIAL",
-        "example": f"{request.url_root}ITsGOLU_OFFICIAL?url={{url}}@ITsGOLU_OFFICIAL&user_id={{user_id}}"
+        "channel": "@ITSMARCOOFFICIAL",
+        "example": f"{request.url_root}ITSMARCOOFFICIAL?url={{url}}@ITSMARCOOFFICIAL&user_id={{user_id}}"
     })
 
-@app.route('/ITsGOLU_OFFICIAL', methods=['GET'])
+@app.route('/ITSMARCOOFFICIAL', methods=['GET'])
 def ITsGOLU_OFFICIAL():
     url = request.args.get('url')
     user_id = request.args.get('user_id')
@@ -462,11 +462,11 @@ def ITsGOLU_OFFICIAL():
         return jsonify({"error": "URL and user_id required"}), 400
     if not user_id.isdigit():
         return jsonify({"error": "user_id must be numeric"}), 400
-    if not url.endswith("@ITsGOLU_OFFICIAL"):
-        return jsonify({"error": "URL must end with @ITsGOLU_OFFICIAL"}), 403
-    actual_url = url[:-len("@ITsGOLU_OFFICIAL")]
+    if not url.endswith("@ITSMARCOOFFICIAL"):
+        return jsonify({"error": "URL must end with @ITSMARCOOFFICIAL"}), 403
+    actual_url = url[:-len("@ITSMARCOOFFICIAL")]
     if not is_user_member_of_channel(int(user_id)):
-        return jsonify({"error": "Join @ITsGOLU_OFFICIAL"}), 403
+        return jsonify({"error": "Join @ITSMARCOOFFICIAL"}), 403
     logger.info(f"Processing for {user_id}: {actual_url[:50]}...")
     # Nepal block note: If Classplus blocks Nepal, you may need a proxy here
     token = get_or_generate_token_internal()
