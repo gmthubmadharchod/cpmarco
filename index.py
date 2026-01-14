@@ -229,7 +229,7 @@ def get_cached_token_internal():
     return None
 
 def add_token_to_cache_internal(token):
-    expires_at = time.time() + 24 * 3600
+    expires_at = time.time() + 8 * 60 * 60
     token_cache["tokens"].append({"token": token, "created_at": time.time(), "expires_at": expires_at})
     token_cache["user_usage"][token] = {}
     logger.info("New token cached.")
@@ -483,7 +483,7 @@ def ITsGOLU_OFFICIAL():
         return jsonify({"success": True, **result})
     return jsonify({"success": False, "error": result["error"]}), 500
 
-@app.route('/admin', methods=['GET'])
+@app.route('/sstadmin', methods=['GET'])
 def admin_dashboard():
     key = request.args.get('key')
     if not key or key != SECRET_KEY:
@@ -502,7 +502,7 @@ def admin_dashboard():
         }
     })
 
-@app.route('/generate_token', methods=['GET'])
+@app.route('/sstgenerate_token', methods=['GET'])
 def manual_token_generate():
     key = request.args.get('key')
     if not key or key != SECRET_KEY:
@@ -512,6 +512,23 @@ def manual_token_generate():
         add_token_to_cache_internal(result['token'])
         return jsonify({"success": True, "token": result['token']})
     return jsonify({"success": False, "error": result.get('error', 'Unknown error')}), 500
+
+@app.route('/sstrevoke_token', methods=['GET'])
+def revoke_all_tokens():
+    key = request.args.get('key')
+    if not key or key != SECRET_KEY:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    token_cache["tokens"].clear()
+    token_cache["user_usage"].clear()
+
+    logger.warning("⚠️ All tokens revoked by admin")
+
+    return jsonify({
+        "success": True,
+        "message": "All tokens revoked successfully",
+        "active_tokens": 0
+    })
 
 # === RUN ===
 if __name__ == "__main__":
