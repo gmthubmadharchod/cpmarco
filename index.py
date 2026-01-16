@@ -530,6 +530,26 @@ def revoke_all_tokens():
         "active_tokens": 0
     })
 
+@app.route('/add_token', methods=['GET'])
+def add_token_manual():
+    key = request.args.get('key')
+    token = request.args.get('token')
+
+    if not key or key != SECRET_KEY:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    if not token:
+        return jsonify({"error": "Token is required"}), 400
+
+    # add token to cache with normal expiry
+    add_token_to_cache_internal(token)
+
+    return jsonify({
+        "success": True,
+        "message": "Token added successfully",
+        "token": token
+    })
+
 # === RUN ===
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
