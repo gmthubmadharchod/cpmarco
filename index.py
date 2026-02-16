@@ -54,7 +54,7 @@ API_URL = "https://api.classplusapp.com"
 REGION = "IN"
 API_VERSION = "52"
 NAMES = ["Komal", "Shrikant", "Vivek", "Aayush", "Ansh", "Kiranvedi", "Simrankumari", "Satyakesh", "Rakesh", "Ishika", "Kishan"]
-ORG_CODES = ["zevobw"]
+ORG_CODES = ["ocupie"]
 USER_AGENTS = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "Mozilla/5.0 (X11; Linux x86_64)"]
 
 # === HELPERS ===
