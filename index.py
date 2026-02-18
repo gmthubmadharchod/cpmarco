@@ -282,129 +282,141 @@ def find_wvd_file():
 def sign_url_internal(url, token):
     try:
         headers = {
-            'accept': 'application/json, text/plain, */*',
-            'accept-encoding': 'gzip',
-            'accept-language': 'EN',
-            'api-version': '35',
-            'app-version': '1.4.73.2',
-            'build-number': '35',
-            'connection': 'Keep-Alive',
-            'content-type': 'application/json',
-            'device-details': 'Xiaomi_Redmi 7_SDK-32',
-            'device-id': CURRENT_DEVICE_ID,  # Use fixed device ID
-            'host': 'api.classplusapp.com',
-            'region': 'IN',
-            'user-agent': 'Mobile-Android',
-            'webengage-luid': '00000187-6fe4-5d41-a530-26186858be4c'
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "EN",
+            "api-version": "35",
+            "app-version": "1.4.73.2",
+            "build-number": "35",
+            "device-details": "Xiaomi_Redmi 7_SDK-32",
+            "device-id": CURRENT_DEVICE_ID,
+            "region": "IN",
+            "user-agent": "Mobile-Android"
         }
-        if token:
-            headers['x-access-token'] = token
 
-        # Bypass Nepal block by using proxy or alternative endpoint if needed
-        # (Currently Classplus API may block Nepal IPs — consider using proxy if this fails)
+        if token:
+            headers["x-access-token"] = token
+
         signed_resp = requests.get(
-            f'https://api.classplusapp.com/cams/uploader/video/jw-signed-url?url={url}',
+            "https://api.classplusapp.com/cams/uploader/video/jw-signed-url",
+            params={"url": url},
             headers=headers,
             timeout=15
         )
+
         try:
             response = signed_resp.json()
-        except ValueError:
-            return {"error": "Failed to parse JSON from Classplus API"}
+        except:
+            return {"error": "Invalid JSON from Classplus"}
 
-        # Non-DRM case
-        if response.get('status') == 'ok' and response.get('url'):
-            return {"url": response['url'], "OWNER": OWNER}
+        logger.info(f"JW RESPONSE: {response}")
 
-        # Token invalid
-        if response.get('error') == 'Invalid token' or response.get('status') == 'failure':
-            return {"error": "Token expired or invalid"}
+        # ===============================
+        # NORMAL SIGNED HLS CASE
+        # ===============================
+        if response.get("status") in ("ok", "success"):
 
-        # DRM case
-        drm_urls = response.get('drmUrls')
-        if not drm_urls:
-            return {"error": "Unexpected response: no DRM and no direct URL"}
+            if response.get("url"):
+                return {"url": response["url"], "OWNER": OWNER}
 
-        mpd_url = drm_urls.get('manifestUrl')
-        lic_url = drm_urls.get('licenseUrl')
-        if not mpd_url or not lic_url:
-            return {"error": "Missing DRM manifest or license URL"}
+            if isinstance(response.get("data"), dict):
+                data = response["data"]
 
-        # Fetch MPD
-        mpd_resp = requests.get(mpd_url, timeout=10)
-        if mpd_resp.status_code != 200:
-            return {"error": f"MPD fetch failed: HTTP {mpd_resp.status_code}"}
+                if data.get("url"):
+                    return {"url": data["url"], "OWNER": OWNER}
 
-        # Parse PSSH robustly
-        pssh_b64 = None
-        try:
-            root = ET.fromstring(mpd_resp.content)
-        except ET.ParseError:
-            return {"error": "Invalid MPD XML"}
+                if data.get("signedUrl"):
+                    return {"url": data["signedUrl"], "OWNER": OWNER}
 
-        namespaces = {'cenc': 'urn:mpeg:cenc:2013'}
-        for elem in root.iter():
-            if 'ContentProtection' in elem.tag:
-                scheme = elem.get('schemeIdUri', '').lower()
-                if 'edef8ba9-79d6-4ace-a3c8-27dcd51d21ed' in scheme:
-                    # Try multiple strategies
-                    pssh_elem = elem.find('.//{urn:mpeg:cenc:2013}pssh')
-                    if pssh_elem is None:
-                        pssh_elem = elem.find('.//cenc:pssh', namespaces)
-                    if pssh_elem is None:
+        # ===============================
+        # DRM CASE
+        # ===============================
+        drm_urls = response.get("drmUrls")
+        if drm_urls:
+
+            mpd_url = drm_urls.get("manifestUrl")
+            lic_url = drm_urls.get("licenseUrl")
+
+            if not mpd_url or not lic_url:
+                return {"error": "Missing DRM manifest or license URL"}
+
+            # Fetch MPD
+            mpd_resp = requests.get(mpd_url, timeout=10)
+            if mpd_resp.status_code != 200:
+                return {"error": f"MPD fetch failed: HTTP {mpd_resp.status_code}"}
+
+            try:
+                root = ET.fromstring(mpd_resp.content)
+            except ET.ParseError:
+                return {"error": "Invalid MPD XML"}
+
+            # Extract PSSH
+            pssh_b64 = None
+            for elem in root.iter():
+                if "ContentProtection" in elem.tag:
+                    scheme = elem.get("schemeIdUri", "").lower()
+                    if "edef8ba9-79d6-4ace-a3c8-27dcd51d21ed" in scheme:
                         for child in elem:
-                            if 'pssh' in child.tag.lower():
-                                pssh_elem = child
+                            if "pssh" in child.tag.lower() and child.text:
+                                pssh_b64 = child.text.strip()
                                 break
-                    if pssh_elem is not None and pssh_elem.text:
-                        pssh_b64 = pssh_elem.text.strip()
-                        break
+                        if pssh_b64:
+                            break
 
-        if not pssh_b64:
-            return {"error": "PSSH not found in MPD"}
+            if not pssh_b64:
+                return {"error": "PSSH not found in MPD"}
 
-        # Load WVD
-        try:
-            wvd_path = find_wvd_file()
-        except Exception as e:
-            return {"error": f"WVD error: {str(e)}"}
+            if not PYWIDEVINE_AVAILABLE:
+                return {"error": "Pywidevine not installed"}
 
-        if not PYWIDEVINE_AVAILABLE:
-            return {"error": "Pywidevine not installed — cannot decrypt DRM"}
+            try:
+                ipssh = PSSH(pssh_b64)
+                wvd_path = find_wvd_file()
+                device = Device.load(wvd_path)
+                cdm = Cdm.from_device(device)
 
-        # Decrypt
-        try:
-            ipssh = PSSH(pssh_b64)
-            device = Device.load(wvd_path)
-            cdm = Cdm.from_device(device)
-            session_id = cdm.open()
-            challenge = cdm.get_license_challenge(session_id, ipssh)
-            lic_headers = {
-                'user-agent': 'okhttp/4.9.3',
-                'content-type': 'application/octet-stream'
-            }
-            lic_resp = requests.post(lic_url, data=challenge, headers=lic_headers, timeout=15)
-            if lic_resp.status_code != 200:
+                session_id = cdm.open()
+                challenge = cdm.get_license_challenge(session_id, ipssh)
+
+                lic_headers = {
+                    "user-agent": "okhttp/4.9.3",
+                    "content-type": "application/octet-stream"
+                }
+
+                lic_resp = requests.post(
+                    lic_url,
+                    data=challenge,
+                    headers=lic_headers,
+                    timeout=15
+                )
+
+                if lic_resp.status_code != 200:
+                    cdm.close(session_id)
+                    return {"error": f"License request failed: {lic_resp.status_code}"}
+
+                cdm.parse_license(session_id, lic_resp.content)
+
+                keys = []
+                for key in cdm.get_keys(session_id):
+                    if key.type == "CONTENT":
+                        keys.append(f"{key.kid.hex}:{key.key.hex()}")
+
                 cdm.close(session_id)
-                return {"error": f"License request failed: {lic_resp.status_code}"}
-            cdm.parse_license(session_id, lic_resp.content)
-            keys = []
-            for key in cdm.get_keys(session_id):
-                if key.type == 'CONTENT':
-                    keys.append(f"{key.kid.hex}:{key.key.hex()}")
-            cdm.close(session_id)
-            if not keys:
-                return {"error": "No decryption keys extracted"}
-            return {
-                "MPD": mpd_url,
-                "KEYS": keys,
-                "OWNER": OWNER
-            }
-        except Exception as e:
-            logger.error(f"Decryption error: {e}")
-            return {"error": f"DRM decryption failed: {str(e)}"}
+
+                if not keys:
+                    return {"error": "No decryption keys extracted"}
+
+                return {
+                    "MPD": mpd_url,
+                    "KEYS": keys,
+                    "OWNER": OWNER
+                }
+
+            except Exception as e:
+                return {"error": f"Widevine error: {str(e)}"}
+
+        return {"error": f"Unhandled response structure: {response}"}
+
     except Exception as e:
-        logger.error(f"sign_url_internal error: {e}")
         return {"error": f"Processing failed: {str(e)}"}
 
 # === TELEGRAM & LOGGING ===
