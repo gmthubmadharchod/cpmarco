@@ -55,15 +55,15 @@ REGION = "IN"
 API_VERSION = "52"
 NAMES = ["Komal", "Shrikant", "Vivek", "Aayush", "Ansh", "Kiranvedi", "Simrankumari", "Satyakesh", "Rakesh", "Ishika", "Kishan"]
 ORG_CODES = ["ocupie"]
-USER_AGENTS = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64)", "Mozilla/5.0 (X11; Linux x86_64)"]
+
 
 # === HELPERS ===
-def random_user_agent(): return random.choice(USER_AGENTS)
+
 def random_name(): return random.choice(NAMES)
 def random_mobile(): return random.choice(["9", "8", "7", "6"]) + ''.join(random.choices(string.digits, k=9))
 def random_org_code(): return random.choice(ORG_CODES)
 
-def get_headers(device_id=CURRENT_DEVICE_ID):  # Use fixed device ID
+def get_headers(device_id=CURRENT_DEVICE_ID):
     return {
         "Accept": "application/json, text/plain, */*",
         "accept-language": "en",
@@ -71,7 +71,14 @@ def get_headers(device_id=CURRENT_DEVICE_ID):  # Use fixed device ID
         "Api-Version": API_VERSION,
         "device-id": device_id,
         "region": REGION,
-        "User-Agent": random_user_agent()
+
+        # 🔥 Mobile app headers
+        "User-Agent": "Mobile-Android",
+        "app-version": "1.4.73.2",
+        "build-number": "35",
+        "device-details": "Xiaomi_Redmi 7_SDK-32",
+        "connection": "Keep-Alive",
+        "accept-encoding": "gzip"
     }
 
 # === GMAIL OTP FETCH ===
