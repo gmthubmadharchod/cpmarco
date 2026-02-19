@@ -284,7 +284,7 @@ def sign_url_internal(url, token):
         headers = {
             "accept": "application/json, text/plain, */*",
             "accept-language": "EN",
-            "api-version": "35",
+            "api-version": "52",
             "app-version": "1.4.73.2",
             "build-number": "35",
             "device-details": "Xiaomi_Redmi 7_SDK-32",
