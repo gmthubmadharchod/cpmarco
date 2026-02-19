@@ -295,6 +295,7 @@ def sign_url_internal(url, token):
 
         if token:
             headers["x-access-token"] = token
+            headers["Authorization"] = f"Bearer {token}"
 
         signed_resp = requests.get(
             "https://api.classplusapp.com/cams/uploader/video/jw-signed-url",
