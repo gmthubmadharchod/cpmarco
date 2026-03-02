@@ -151,6 +151,7 @@ async def generate_token_logic():
             try:
                 await verify_otp(otp, session_id, org_id, email_addr, CURRENT_DEVICE_ID)
                 token = await register_user(name, email_addr, mobile, org_id, org_name, session_id, otp, CURRENT_DEVICE_ID)
+                token = await refresh_token(token)
                 logger.info("Token generated successfully.")
                 return token
             except Exception as e:
@@ -163,6 +164,7 @@ async def generate_token_logic():
                         continue
                     await verify_otp(otp, session_id, org_id, email_addr, CURRENT_DEVICE_ID)
                     token = await register_user(name, email_addr, mobile, org_id, org_name, session_id, otp, CURRENT_DEVICE_ID)
+                    token = await refresh_token(token)
                     logger.info("Token generated after OTP regeneration.")
                     return token
             logger.error(f"Verification/Registration failed: {e}")
