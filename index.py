@@ -46,8 +46,8 @@ MAX_USES_PER_TOKEN = 150
 recent_logs = []
 MAX_RECENT_LOGS = 100
 server_start_time = time.time()
-CURRENT_DEVICE_ID = uuid.uuid4().hex  # Fixed device ID for all requests
-CURRENT_FINGERPRINT_ID = uuid.uuid4().hex  # Fixed fingerprint ID
+CURRENT_DEVICE_ID = "8f3c2a9d6b1e4f7c9a2d6e3f4b5c7d8e"# Fixed device ID for all requests
+CURRENT_FINGERPRINT_ID = "4c7e2a9b6d1f3c8a7b5d2e6f9a3c4b1d" # Fixed fingerprint ID
 
 # === CONSTANTS ===
 API_URL = "https://api.classplusapp.com"
