@@ -167,8 +167,7 @@ async def generate_token_logic():
                     token = await refresh_token(token)
                     logger.info("Token generated after OTP regeneration.")
                     return token
-            logger.error(f"Verification/Registration failed: {e}")
-            raise
+            
         except Exception as e:
             logger.error(f"Attempt {attempt+1} failed: {e}")
             await asyncio.sleep(2)
