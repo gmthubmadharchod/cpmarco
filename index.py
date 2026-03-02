@@ -183,6 +183,23 @@ async def validate_org(org_code, device_id=CURRENT_DEVICE_ID):
             logger.info(f"Org valid: {d['orgName']}")
             return d["orgId"], d["orgName"]
 
+async def refresh_token(token):
+    headers = get_headers()
+    headers["x-access-token"] = token
+    headers["Authorization"] = f"Bearer {token}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            f"{API_URL}/v2/users/login-with-token",
+            headers=headers,
+            timeout=10
+        ) as r:
+            if r.status != 200:
+                raise Exception(f"Token refresh failed: {await r.text()}")
+
+            data = await r.json()
+            return data["data"]["token"]
+
 async def generate_otp(email, org_id, org_code, device_id=CURRENT_DEVICE_ID):
     headers = get_headers(device_id)
     payload = {"countryExt": "91", "orgCode": org_code, "viaSms": 0, "viaEmail": 1, "retry": 0, "orgId": org_id, "otpCount": 0, "email": email}
